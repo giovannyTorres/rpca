@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rpca-kit"
-version = "0.1.0"
-description = "Robust PCA with NumPy and optional PyTorch CPU/CUDA backends"
+version = "0.1.1"
+description = "Separate low-rank structure from sparse corruption with robust PCA on NumPy and optional PyTorch"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"

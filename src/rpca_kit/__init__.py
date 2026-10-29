@@ -5,7 +5,7 @@ from .estimator import RPCA
 from .result import ConvergenceWarning, RPCAResult
 from .solvers import admm, decompose, godec, outlier_pursuit, pcp, stable_pcp
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "RPCA", "RPCAResult", "ConvergenceWarning", "pcp", "admm", "stable_pcp",
