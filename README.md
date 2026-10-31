@@ -7,9 +7,9 @@ choose among five decomposition methods, and inspect the fitted components and
 convergence diagnostics. Optional PyTorch support gives you the same solver API
 on CPU or CUDA.
 
-[PyPI](https://pypi.org/project/rpca-kit/) ·
-[Source](https://github.com/giovannyTorres/rpca) ·
-[Algorithm guide](https://github.com/giovannyTorres/rpca/blob/main/docs/algorithms.md) ·
+[PyPI](https://pypi.org/project/rpca-kit/) �
+[Source](https://github.com/giovannyTorres/rpca) �
+[Algorithm guide](https://github.com/giovannyTorres/rpca/blob/main/docs/algorithms.md) �
 [Issues](https://github.com/giovannyTorres/rpca/issues)
 
 ## What you get
@@ -35,9 +35,9 @@ These are application scenarios, not claims of deployed customer results:
 
 | Scenario | Arrange the matrix | What to investigate |
 | --- | --- | --- |
-| Sensor monitoring | Sensors × time samples | Shared operating patterns versus isolated faulty readings with `pcp`. |
-| Batch or sample quality review | Measurements × samples | Whole unusual samples with `outlier_pursuit`; each candidate sample must be a column. |
-| Fixed-camera video experiments | Flattened pixels × frames | A low-rank background and sparse moving regions, if the camera is stable and motion occupies a small portion of the scene. |
+| Sensor monitoring | Sensors � time samples | Shared operating patterns versus isolated faulty readings with `pcp`. |
+| Batch or sample quality review | Measurements � samples | Whole unusual samples with `outlier_pursuit`; each candidate sample must be a column. |
+| Fixed-camera video experiments | Flattened pixels � frames | A low-rank background and sparse moving regions, if the camera is stable and motion occupies a small portion of the scene. |
 
 You supply the numeric matrix and domain interpretation. The package does not
 load videos, select alert thresholds, or decide whether a deviation is a fault.
@@ -179,7 +179,7 @@ NumPy input uses CPU by default. Select PyTorch CPU explicitly with
 when calling a solver. With `backend="auto"`, a PyTorch tensor keeps its backend
 and device. `result.to_numpy()` makes an explicit, independent CPU copy.
 
-CI tests NumPy on Python 3.10–3.13 and PyTorch on CPU. **CUDA execution is
+CI tests NumPy on Python 3.10�3.13 and PyTorch on CPU. **CUDA execution is
 implemented but has not been validated on GPU hardware for this release.**
 Skipped GPU tests are not GPU validation. Requesting unavailable CUDA raises an
 error rather than silently switching to CPU. GPU transfers and synchronization
@@ -199,6 +199,8 @@ can outweigh any benefit for small matrices; no universal speedup is claimed.
   nonconvex; convergence does not certify global optimality or correct recovery.
 - PyTorch operations do not construct autograd graphs. This is a decomposition
   toolkit, not a differentiable training layer.
+- Unrepresentable norms or objectives raise `FloatingPointError`; rescale the
+  data and regularization parameters before retrying.
 
 ## Develop and reproduce
 
@@ -220,11 +222,11 @@ and [CI runs](https://github.com/giovannyTorres/rpca/actions).
 
 These are established algorithms, implemented here in a compact shared API:
 
-- Candès, Li, Ma, and Wright. *Robust Principal Component Analysis?* JACM, 2011.
+- Cand�s, Li, Ma, and Wright. *Robust Principal Component Analysis?* JACM, 2011.
   [Paper](https://doi.org/10.1145/1970392.1970395).
 - Lin, Chen, and Ma. *The Augmented Lagrange Multiplier Method for Exact Recovery
   of Corrupted Low-Rank Matrices*, 2010. [Paper](https://arxiv.org/abs/1009.5055).
-- Zhou, Li, Wright, Candès, and Ma. *Stable Principal Component Pursuit*, 2010.
+- Zhou, Li, Wright, Cand�s, and Ma. *Stable Principal Component Pursuit*, 2010.
   [Paper](https://arxiv.org/abs/1001.2363). This package uses the penalized
   formulation, not a directly constrained noise-ball formulation.
 - Xu, Caramanis, and Sanghavi. *Robust PCA via Outlier Pursuit*, 2010.

@@ -17,7 +17,9 @@ python examples/readme_sensors.py
 ```
 
 The release script runs tests and lint checks, builds in a temporary directory,
-and validates metadata with Twine. It copies the validated wheel and source
+and validates metadata with Twine. It then installs wheel and source separately
+in clean temporary environments, checks versions and dependencies, and runs all
+three examples without PyTorch. It copies the validated wheel and source
 distribution to `dist/`. Without `--publish`, it does not upload anything.
 
 For PyTorch CPU coverage, install the intended CPU build and rerun the tests.
@@ -30,7 +32,7 @@ Install the wheel into a separate environment and run outside the checkout:
 
 ```bash
 python -m venv /tmp/rpca-wheel-test
-/tmp/rpca-wheel-test/bin/python -m pip install dist/rpca_kit-0.1.1-py3-none-any.whl
+/tmp/rpca-wheel-test/bin/python -m pip install dist/rpca_kit-0.1.2-py3-none-any.whl
 cd /tmp
 /tmp/rpca-wheel-test/bin/python -c 'import rpca_kit; print(rpca_kit.__version__)'
 /tmp/rpca-wheel-test/bin/python -m pip check
@@ -57,9 +59,17 @@ The workflow lives at
 [.github/workflows/publish.yml](https://github.com/giovannyTorres/rpca/blob/main/.github/workflows/publish.yml).
 It is triggered manually through
 [GitHub Actions](https://github.com/giovannyTorres/rpca/actions/workflows/publish.yml).
-Select the intended revision, confirm the commit and version, and run **Publish
-to PyPI**. The build job runs NumPy and PyTorch CPU tests, lint, build, and Twine
+Supply an existing validated tag such as `v0.1.2` and run **Publish to PyPI**.
+The workflow checks out that tag and requires it to match both installed
+metadata and the module version. The build job runs NumPy and PyTorch CPU
+tests, lint, build, Twine, and independent wheel/source installation
 checks. Only after the build succeeds does the `pypi` environment job publish.
+
+Release 0.1.2 can also be initiated by pushing its validated source to
+`release/0.1.2`. This branch trigger accepts only package version 0.1.2,
+uses the exact pushed commit, and preserves the existing `pypi`
+Trusted Publisher identity. Future versions use the manual tag workflow.
+A successful build alone is not proof of an upload; verify PyPI readback.
 
 Trusted Publishing exchanges GitHub's OIDC identity for a short-lived publishing
 credential. No long-lived PyPI token belongs in the repository, source archive,
@@ -85,7 +95,7 @@ version from PyPI into a new environment:
 
 ```bash
 python -m venv /tmp/rpca-pypi-test
-/tmp/rpca-pypi-test/bin/python -m pip install --index-url https://pypi.org/simple rpca-kit==0.1.1
+/tmp/rpca-pypi-test/bin/python -m pip install --index-url https://pypi.org/simple rpca-kit==0.1.2
 /tmp/rpca-pypi-test/bin/python -c 'import rpca_kit; print(rpca_kit.__version__)'
 /tmp/rpca-pypi-test/bin/python -m pip check
 ```

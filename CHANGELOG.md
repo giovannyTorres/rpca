@@ -1,5 +1,17 @@
 # Changes
 
+## 0.1.2 (2026-10-30)
+
+- Scale Frobenius and column norms to prevent false zero solutions and NaN
+  diagnostics on very small or very large matrices.
+- Normalize stable PCP's stopping measure by the data norm, so rescaling data
+  and `tau` together preserves the requested relative accuracy.
+- Raise `FloatingPointError` for unrepresentable diagnostics instead of
+  returning invalid results; support lazy negative PyTorch views in NumPy conversion.
+- Validate wheel and source installations independently with examples, exact
+  version checks, dependency checks, and SHA-256 hashes.
+- Require a matching release tag before the manual PyPI publishing workflow.
+
 ## 0.1.1
 
 Documentation-focused release. Algorithms and public APIs are unchanged.

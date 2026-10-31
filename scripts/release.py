@@ -29,6 +29,7 @@ def main() -> None:
         if len(artifacts) != 2:
             raise RuntimeError("Expected exactly one wheel and one source distribution")
         run("-m", "twine", "check", *(str(path) for path in artifacts), cwd=root)
+        run(str(root / "scripts" / "check_artifacts.py"), "--dist-dir", str(build_dir), cwd=root)
         destination = root / "dist"
         destination.mkdir(exist_ok=True)
         for artifact in artifacts:

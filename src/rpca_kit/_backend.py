@@ -39,7 +39,7 @@ def to_numpy(data: Any, *, copy: bool = True) -> np.ndarray:
     Setting ``copy=False`` may share CPU storage with the input.
     """
     if _is_tensor(data):
-        tensor = data.detach().cpu()
+        tensor = data.detach().cpu().resolve_conj().resolve_neg()
         if tensor.dtype == _torch().bfloat16:
             tensor = tensor.to(dtype=_torch().float64)
         array = tensor.numpy()
@@ -63,9 +63,12 @@ class Backend:
 
     def norm(self, x: Any) -> float:
         """Frobenius norm of a matrix."""
+        scale = self.max_abs(x)
+        if scale == 0:
+            return 0.0
         if self.name == "numpy":
-            return float(np.linalg.norm(x, ord="fro"))
-        return float(self.xp.linalg.vector_norm(x).item())
+            return scale * float(np.linalg.norm(x / scale, ord="fro"))
+        return scale * float(self.xp.linalg.vector_norm(x / scale).item())
 
     def spectral_norm(self, x: Any) -> float:
         if self.name == "numpy":
@@ -103,11 +106,10 @@ class Backend:
 
     def group_shrink(self, x: Any, tau: float) -> Any:
         """Soft threshold the Euclidean norm of each column."""
+        norms = self._column_norms(x)
         if self.name == "numpy":
-            norms = np.linalg.norm(x, axis=0)
             scale = np.maximum(norms - tau, 0) / np.where(norms > 0, norms, 1)
         else:
-            norms = self.xp.linalg.vector_norm(x, dim=0)
             denominator = self.xp.where(norms > 0, norms, self.xp.ones_like(norms))
             scale = self.xp.clamp(norms - tau, min=0) / denominator
         return x * scale
@@ -115,8 +117,18 @@ class Backend:
     def group_norm(self, x: Any) -> float:
         """Sum of column Euclidean norms (the l2,1 norm)."""
         if self.name == "numpy":
-            return float(np.linalg.norm(x, axis=0).sum())
-        return float(self.xp.linalg.vector_norm(x, dim=0).sum().item())
+            return float(self._column_norms(x).sum())
+        return float(self._column_norms(x).sum().item())
+
+    def _column_norms(self, x: Any) -> Any:
+        """Scale each column before squaring, preserving zero columns."""
+        if self.name == "numpy":
+            scales = np.abs(x).max(axis=0)
+            safe = np.where(scales > 0, scales, 1)
+            return scales * np.linalg.norm(x / safe, axis=0)
+        scales = self.xp.abs(x).amax(dim=0)
+        safe = self.xp.where(scales > 0, scales, self.xp.ones_like(scales))
+        return scales * self.xp.linalg.vector_norm(x / safe, dim=0)
 
     def truncated_svd(self, x: Any, rank: int) -> Any:
         """Best rank-at-most-``rank`` approximation using compact SVD."""
@@ -203,7 +215,7 @@ def get_backend(
     if backend == "numpy":
         if tensor_input:
             dtype = data.dtype if data.dtype in (torch.float32, torch.float64) else torch.float64
-            array = data.detach().to(device="cpu", dtype=dtype).numpy().copy()
+            array = data.detach().to(device="cpu", dtype=dtype).resolve_conj().resolve_neg().numpy().copy()
         else:
             dtype = data.dtype if data.dtype in (np.dtype("float32"), np.dtype("float64")) else np.float64
             array = np.array(data, dtype=dtype, copy=True, order="C")

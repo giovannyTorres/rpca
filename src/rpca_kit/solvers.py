@@ -36,10 +36,13 @@ def _setup(data, backend, device, max_iter, tol):
     max_iter = _integer("max_iter", max_iter, 1)
     tol = _positive("tol", tol)
     ops, x = get_backend(data, backend=backend, device=device)
+    if not math.isfinite(ops.norm(x)):
+        raise FloatingPointError("Input norm exceeds numerical range; rescale the data")
     return ops, x, max_iter, tol
 
 
 def _finish(ops, x, low, sparse, converged, n_iter, error, objective, history, method):
+    _finite_metrics(error, objective)
     if not converged:
         warnings.warn(
             f"{method} did not converge in {n_iter} iterations (error={error:.3g}). "
@@ -52,6 +55,13 @@ def _finish(ops, x, low, sparse, converged, n_iter, error, objective, history, m
         converged=converged, n_iter=n_iter, error=error, objective=objective,
         history=history, method=method, backend=ops.name, device=ops.device,
     )
+
+
+def _finite_metrics(error, objective):
+    if not math.isfinite(error) or not math.isfinite(objective):
+        raise FloatingPointError(
+            "Solver diagnostics exceed numerical range; rescale data and regularization parameters"
+        )
 
 
 def _zero_result(ops, x, method):
@@ -93,6 +103,7 @@ def _equality(
         dual_error = penalty * ops.norm(sparse - old_sparse) / max(1.0, ops.norm(dual))
         error = max(primal_error, dual_error)
         objective = nuclear + lam * sparse_norm(sparse)
+        _finite_metrics(error, objective)
         history.append({
             "iteration": iteration, "error": error, "residual_error": primal_error,
             "dual_error": dual_error, "objective": objective, "rank": rank,
@@ -187,7 +198,7 @@ def stable_pcp(
         new_low, rank, nuclear = ops.svt(extrap_low - 0.5 * gradient, 0.5 * tau)
         new_sparse = ops.shrink(extrap_sparse - 0.5 * gradient, 0.5 * tau * lam)
         residual_norm = ops.norm(x - new_low - new_sparse)
-        objective = 0.5 * residual_norm**2 + tau * (nuclear + lam * ops.sum_abs(new_sparse))
+        objective = 0.5 * residual_norm * residual_norm + tau * (nuclear + lam * ops.sum_abs(new_sparse))
         if objective > previous_objective:
             # A monotone restart prevents oscillatory extrapolation from being accepted.
             extrap_low, extrap_sparse = low, sparse
@@ -196,10 +207,11 @@ def stable_pcp(
             new_low, rank, nuclear = ops.svt(low - 0.5 * gradient, 0.5 * tau)
             new_sparse = ops.shrink(sparse - 0.5 * gradient, 0.5 * tau * lam)
             residual_norm = ops.norm(x - new_low - new_sparse)
-            objective = 0.5 * residual_norm**2 + tau * (nuclear + lam * ops.sum_abs(new_sparse))
+            objective = 0.5 * residual_norm * residual_norm + tau * (nuclear + lam * ops.sum_abs(new_sparse))
         error = 2 * math.hypot(
             ops.norm(new_low - extrap_low), ops.norm(new_sparse - extrap_sparse),
-        ) / max(1.0, scale)
+        ) / scale
+        _finite_metrics(error, objective)
         history.append({
             "iteration": iteration, "error": error, "residual_error": residual_norm / scale,
             "objective": objective, "rank": rank,
@@ -242,7 +254,8 @@ def godec(
         error = math.hypot(ops.norm(new_low - low), ops.norm(new_sparse - sparse)) / scale
         low, sparse = new_low, new_sparse
         residual_norm = ops.norm(x - low - sparse)
-        objective = 0.5 * residual_norm**2
+        objective = 0.5 * residual_norm * residual_norm
+        _finite_metrics(error, objective)
         history.append({
             "iteration": iteration, "error": error, "residual_error": residual_norm / scale,
             "objective": objective,

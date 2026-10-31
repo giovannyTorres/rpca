@@ -1,8 +1,10 @@
 # Models, parameters, and convergence
 
-For an input `D` with shape `m × n`, every solver returns `L`, `S`, and
+For an input `D` with shape `m � n`, every solver returns `L`, `S`, and
 `E = D - L - S`. Norms and stopping criteria operate on the supplied matrix.
-The package does not automatically center, standardize, or normalize your data.
+The package does not automatically center or standardize your data. Norm
+calculations scale intermediate values before squaring to reduce numerical
+underflow and overflow; returned components remain in the original units.
 
 ## PCP: IALM and ADMM
 
@@ -42,7 +44,7 @@ The history retains each error separately.
 `stable_pcp(D, tau=1.0, lambda_=None, ...)` minimizes:
 
 ```text
-0.5 ||D - L - S||_F² + tau ||L||_* + tau lambda ||S||_1
+0.5 ||D - L - S||_F� + tau ||L||_* + tau lambda ||S||_1
 ```
 
 The solver uses accelerated proximal gradient (FISTA). The gradient of the
@@ -53,8 +55,10 @@ to a stationarity measure, not a requirement for zero reconstruction residual.
 
 The step size is `1/2`. Extrapolation restarts if it increases the objective.
 For the extrapolated pair `Z` and next proximal pair `P(Z)`, the stopping error is
-`2*||P(Z)-Z||_F / max(1,||D||_F)`. The joint norm combines the squared Frobenius
+`2*||P(Z)-Z||_F / ||D||_F` for nonzero data. The joint norm combines the squared Frobenius
 norms of both components. This is a proximal-gradient mapping measure.
+Rescaling `D` and `tau` by the same positive factor preserves this stopping
+criterion. Tiny input values do not bypass the requested relative tolerance.
 
 For an arbitrary fixed `tau`, this penalized objective is not equivalent to
 specifying a hard noise bound `||E||_F <= delta`. The package does not estimate
@@ -87,7 +91,7 @@ approximation with retention of the `k` largest-magnitude residual entries.
 It implements the alternating-projection core of:
 
 ```text
-min 0.5 ||D - L - S||_F²
+min 0.5 ||D - L - S||_F�
 subject to rank(L) <= r, number of nonzero entries in S <= k
 ```
 
@@ -111,6 +115,12 @@ criterion. Solver docstrings document the implemented formulas.
 Zero input returns zero matrices, `n_iter=0`, `converged=True`, and an empty
 history. Reaching `max_iter` without satisfying the stopping criterion returns
 the last iterate and emits `ConvergenceWarning`.
+
+Diagnostics must be finite. If an input norm or objective exceeds the available
+numerical range, the solver raises `FloatingPointError` and asks for rescaling.
+For example, a squared residual of order `1e400` cannot be represented in
+float64 even though each input entry may be finite. This is separate from
+ordinary nonconvergence and is not reported as a usable decomposition.
 
 `float32` operations may stagnate before reaching very small tolerances. Start
 with `tol=1e-5` for that precision, including on PyTorch. The package never relaxes
