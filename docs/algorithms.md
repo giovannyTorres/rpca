@@ -1,6 +1,6 @@
 # Models, parameters, and convergence
 
-For an input `D` with shape `m � n`, every solver returns `L`, `S`, and
+For an input `D` with shape `m × n`, every solver returns `L`, `S`, and
 `E = D - L - S`. Norms and stopping criteria operate on the supplied matrix.
 The package does not automatically center or standardize your data. Norm
 calculations scale intermediate values before squaring to reduce numerical
@@ -44,7 +44,7 @@ The history retains each error separately.
 `stable_pcp(D, tau=1.0, lambda_=None, ...)` minimizes:
 
 ```text
-0.5 ||D - L - S||_F� + tau ||L||_* + tau lambda ||S||_1
+0.5 ||D - L - S||_F² + tau ||L||_* + tau lambda ||S||_1
 ```
 
 The solver uses accelerated proximal gradient (FISTA). The gradient of the
@@ -91,7 +91,7 @@ approximation with retention of the `k` largest-magnitude residual entries.
 It implements the alternating-projection core of:
 
 ```text
-min 0.5 ||D - L - S||_F�
+min 0.5 ||D - L - S||_F²
 subject to rank(L) <= r, number of nonzero entries in S <= k
 ```
 
